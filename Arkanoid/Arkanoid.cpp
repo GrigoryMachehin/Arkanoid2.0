@@ -148,7 +148,6 @@ int newRecord()
                         inputText[0] = ' ';
                         inputText[inputIndex - 1] = '\0';
                         inputIndex--;
-                        //maxIndex--;
                     }
                     break;
                 default:
@@ -177,6 +176,7 @@ int newRecord()
             }
         }
         SDL_RenderClear(renderer);
+        renderTexture(recordsBackTexture, renderer, 0, 0, 480, 720);
         renderText(renderer, u8"Введи имя, герой:", 100, 360);
         renderText(renderer, inputText, 150, 400);
         renderText(renderer, u8"(Латиница)", 150, 600);
@@ -483,6 +483,38 @@ void pauseMenu(int lvl)
                 break;
             case SDL_QUIT:
                 quit = true;
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                int mouseX = event.button.x;
+                int mouseY = event.button.y;
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 380 && mouseY <= 440)
+                {
+                    selectedButton = 0;
+                    klick();
+                    return;
+                    break;
+                }
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 440 && mouseY <= 500)
+                {
+                    selectedButton = 1;
+                    klick();
+                    printRecord();
+                    break;
+                }
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 500 && mouseY <= 560)
+                {
+                    selectedButton = 2;
+                    klick();
+                    settings();
+                    break;
+                }
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 560 && mouseY <= 620)
+                {
+                    selectedButton = 3;
+                    klick();
+                    quit = true;
+                    break;
+                }
                 break;
             }
         }
@@ -1409,6 +1441,45 @@ void menu()
                 break;
             case SDL_QUIT:
                 quit = true;
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                int mouseX = event.button.x;
+                int mouseY = event.button.y;
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 380 && mouseY <= 440)
+                {
+                    selectedButton = 0;
+                    klick();
+                    gameLoop(1);
+                    break;
+                }
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 440 && mouseY <= 500)
+                {
+                    selectedButton = 1;
+                    klick();
+                    gameLoop(0);
+                    break;
+                }
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 500 && mouseY <= 560)
+                {
+                    selectedButton = 2;
+                    klick();
+                    printRecord();
+                    break;
+                }
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 560 && mouseY <= 620)
+                {
+                    selectedButton = 3;
+                    klick();
+                    settings();
+                    break;
+                }
+                if (mouseX >= 120 && mouseX <= 360 && mouseY >= 620 && mouseY <= 660)
+                {
+                    selectedButton = 4;
+                    klick();
+                    quit = true;
+                    break;
+                }
                 break;
             }
         }
