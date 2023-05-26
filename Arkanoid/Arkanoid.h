@@ -28,7 +28,10 @@ const int RECT_WIDTH = 60;
 const int RECT_HEIGHT = 20;
 const int CIRCLE_RADIUS = 10;
 const int MAX_RECORDS = 10;
+const int BONUSE_CHANCE = 5;
 
+Mix_Chunk* soundOfBonuse = NULL;
+Mix_Chunk* newLvl = NULL;
 Mix_Chunk* broke = NULL;
 Mix_Chunk* bounce = NULL;
 Mix_Chunk* victory = NULL;
@@ -57,6 +60,10 @@ SDL_Texture* pepe;
 SDL_Texture* trollface;
 SDL_Texture* coolCat;
 SDL_Texture* heart;
+SDL_Texture* speedPlusTexture;
+SDL_Texture* speedMinusTexture;
+SDL_Texture* widthPlusTexture;
+SDL_Texture* widthMinusTexture;
 
 int selectedButton = 0;
 
@@ -68,12 +75,14 @@ struct Record {
 struct Platform {
     int x, y;
     int velocity_x;
+    int widthMode;
 };
 
 struct Rect {
     int x, y;
     int strength;
     bool is_visible;
+    int bonuse;
 };
 
 struct Circle {
@@ -82,6 +91,14 @@ struct Circle {
     SDL_Color color;
     int lives;
     int score;
+    int speedMode;
+};
+
+struct Bonuse {
+    int x, y;
+    int type;
+    SDL_Texture* bonuceTexture;
+    bool isVisible;
 };
 
 TTF_Font* font = NULL;
@@ -92,13 +109,15 @@ bool nextLvl = false;
 
 Platform platform;
 Rect rectangles[RECT_COUNT];
+Bonuse bonuse;
 Circle circle;
 
 
 
 #include "Arkanoid.h"
 
-
+void getBonus();
+void newLevel();
 void kwa();
 void lose();
 void win();

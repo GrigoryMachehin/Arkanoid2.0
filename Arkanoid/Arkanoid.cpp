@@ -1,5 +1,17 @@
 #include "Arkanoid.h"
 
+void newLevel()
+{
+    newLvl = Mix_LoadWAV("newLvl.wav");
+    Mix_PlayChannel(-1, newLvl, 0);
+}
+
+void getBonus()
+{
+    soundOfBonuse = Mix_LoadWAV("bonus.mp3");
+    Mix_PlayChannel(-1, soundOfBonuse, 0);
+}
+
 void kwa()
 {
     minusHeart = Mix_LoadWAV("kwa.wav");
@@ -111,7 +123,7 @@ int newRecord()
     SDL_Event event;
     int quit = 0;
 
-    char inputText[20] = "|";
+    char inputText[20] = " ";
     int inputIndex = 0;
     int maxIndex = 0, end = 10;
 
@@ -129,6 +141,15 @@ int newRecord()
                     return -1;
                 case SDLK_RETURN:
                     quit = 1;
+                    break;
+                    break;
+                case SDLK_BACKSPACE:
+                    if (inputIndex > 1) {
+                        inputText[0] = ' ';
+                        inputText[inputIndex - 1] = '\0';
+                        inputIndex--;
+                        //maxIndex--;
+                    }
                     break;
                 default:
                     if ((event.key.keysym.sym >= 1 && event.key.keysym.sym <= 254 && event.key.keysym.sym != 32 && inputIndex < end && inputIndex < 10) and (strlen(inputText) <= 10))
@@ -155,9 +176,11 @@ int newRecord()
                 break;
             }
         }
-        renderText(renderer, u8"Введи имя, герой:", 100, 560);
-        renderText(renderer, inputText, 200, 600);
-        renderText(renderer, u8"(Латиница)", 150, 640);
+        SDL_RenderClear(renderer);
+        renderText(renderer, u8"Введи имя, герой:", 100, 360);
+        renderText(renderer, inputText, 150, 400);
+        renderText(renderer, u8"(Латиница)", 150, 600);
+        renderText(renderer, u8"(Скип - ввод пустой строки)", 15, 640);
 
         SDL_RenderPresent(renderer);
     }
@@ -210,7 +233,7 @@ void printRecord()
 
 void save(int lvl) {
     ofstream file("save.txt");
-    file << circle.score << " " << lvl << " " << circle.lives << endl;
+    file << circle.score << " " << lvl << " " << circle.lives << " " << circle.speedMode << endl;
         for (int i = 0; i < 49; i++)
         {
             file << rectangles[i].is_visible << " ";
@@ -220,7 +243,7 @@ void save(int lvl) {
 
 int loadGame(int lvl) {
     ifstream file("save.txt");
-    file >> circle.score >> lvl >> circle.lives;
+    file >> circle.score >> lvl >> circle.lives >> circle.speedMode;
     for (int i = 0; i < 49; i++)
     {
         file >> rectangles[i].is_visible;
@@ -520,6 +543,7 @@ void handleEvents(int lvl) {
                 break;
             case SDLK_h:
                 SDL_RenderClear(renderer);
+                bonuse.isVisible = false;
                 lose();
                 renderTexture(trollface, renderer, 50, 200, 400, 400);
                 SDL_RenderPresent(renderer);
@@ -565,7 +589,7 @@ int update(int lvl) {
         circle.x += circle.velocity_x;
         circle.y += circle.velocity_y;
 
-        if (circle.x <= CIRCLE_RADIUS || circle.x >= SCREEN_WIDTH - CIRCLE_RADIUS) {
+        if (circle.x <= CIRCLE_RADIUS || circle.x >= SCREEN_WIDTH - 2 - CIRCLE_RADIUS) {
             bounceBall();
             circle.velocity_x *= -1;
         }
@@ -574,7 +598,7 @@ int update(int lvl) {
             circle.velocity_y *= -1;
         }
         if (circle.y >= SCREEN_HEIGHT - PLATFORM_HEIGHT - CIRCLE_RADIUS * 2 + 10) {
-            if (circle.x > platform.x && circle.x < platform.x + PLATFORM_WIDTH) {
+            if (circle.x > platform.x - 10 - platform.widthMode && circle.x < platform.x + PLATFORM_WIDTH + 10 + platform.widthMode*2) {
                 bounceBall();
                 circle.velocity_y *= -1;
 
@@ -588,6 +612,7 @@ int update(int lvl) {
             }
             else {
                 circle.lives--;
+                bonuse.isVisible = false;
                 kwa();
                 renderTexture(pepe, renderer, SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 200);
                 SDL_RenderPresent(renderer);
@@ -608,10 +633,27 @@ int update(int lvl) {
                     rectangles[i].strength--;
                     if (rectangles[i].strength == 0) {
                         brokeRect();
+                        if (rectangles[i].bonuse == 1 && !bonuse.isVisible && circle.speedMode > -1)
+                        {
+                            bonuse.isVisible = true;
+                            bonuse.type = 1;
+                            bonuse.x = rectangles[i].x;
+                            bonuse.y = rectangles[i].y;
+                            bonuse.bonuceTexture = speedPlusTexture;
+                        }
+                        if (rectangles[i].bonuse == 2 && !bonuse.isVisible && circle.speedMode < 1)
+                        {
+                            bonuse.isVisible = true;
+                            bonuse.type = 2;
+                            bonuse.x = rectangles[i].x;
+                            bonuse.y = rectangles[i].y;
+                            bonuse.bonuceTexture = speedMinusTexture;
+                        }
                         rectangles[i].is_visible = false;
                     }
                     bounceBall();
                     circle.velocity_y *= -1;
+
                     if (circle.x <= rectangles[i].x || circle.x >= rectangles[i].x + RECT_WIDTH) {
                         circle.velocity_x *= -1;
                     }
@@ -619,6 +661,20 @@ int update(int lvl) {
                 }
             }
         }
+        if (bonuse.isVisible) { bonuse.y += 5; }
+        if (bonuse.y >= SCREEN_HEIGHT - PLATFORM_HEIGHT - CIRCLE_RADIUS * 2 + 20 && bonuse.isVisible) {
+            if (bonuse.x > platform.x - 10 - platform.widthMode && bonuse.x < platform.x + PLATFORM_WIDTH + 10 + platform.widthMode * 2)
+            {
+                getBonus();
+                if (bonuse.type == 1) { circle.speedMode = -10; bonuse.isVisible = false; }
+                if (bonuse.type == 2) { circle.speedMode = 7; bonuse.isVisible = false; }
+            }
+            else
+            {
+                bonuse.isVisible = false;
+            }
+        }
+
         bool all_rectangles_invisible = true;
         if (circle.lives <= 0) {
             SDL_RenderClear(renderer);
@@ -669,10 +725,21 @@ void draw(int lvl) {
             SDL_RenderFillRect(renderer, &rect);
         }
     }
-
+    if (circle.speedMode > 0)
+    {
+        renderTexture(speedMinusTexture, renderer, 420, 640, 40, 40);
+    }
+    if (circle.speedMode < 0)
+    {
+        renderTexture(speedPlusTexture, renderer, 420, 640, 40, 40);
+    }
+    if (bonuse.isVisible)
+    {
+        renderTexture(bonuse.bonuceTexture, renderer, bonuse.x, bonuse.y, 50, 50);
+    }
     for (int i = 0; i < circle.lives; i++) renderTexture(heart, renderer, 100 + i * 25, 5, 40, 40);
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-    SDL_Rect rect = { platform.x, SCREEN_HEIGHT - PLATFORM_HEIGHT, PLATFORM_WIDTH, PLATFORM_HEIGHT };
+    SDL_Rect rect = { platform.x - platform.widthMode, SCREEN_HEIGHT - PLATFORM_HEIGHT, PLATFORM_WIDTH  + platform.widthMode*2, PLATFORM_HEIGHT };
     SDL_RenderFillRect(renderer, &rect);
 
     for (int w = 0; w < CIRCLE_RADIUS * 2; w++) {
@@ -690,7 +757,7 @@ void draw(int lvl) {
     renderText(renderer, _itoa(lvl, argv, 10), 440, 5);
     delete argv;
 
-    //SDL_Delay(20);
+    SDL_Delay(10 + circle.speedMode);
     SDL_RenderPresent(renderer);
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
 }
@@ -727,23 +794,30 @@ bool initialize(int lvl, bool loaded) {
             rectangles[i].x = rect_x;
             rectangles[i].y = rect_y;
             rectangles[i].strength = (rand() % 3) + 1;
+            rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
             rectangles[i + 7].x = rect_x;
             rectangles[i + 7].y = rect_y + 50;
+            rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
             rectangles[i + 7].strength = (rand() % 3) + 1;
             rectangles[i + 14].x = rect_x;
             rectangles[i + 14].y = rect_y + 100;
+            rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
             rectangles[i + 14].strength = (rand() % 3) + 1;
             rectangles[i + 21].x = rect_x;
             rectangles[i + 21].y = rect_y + 150;
+            rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
             rectangles[i + 21].strength = (rand() % 3) + 1;
             rectangles[i + 28].x = rect_x;
             rectangles[i + 28].y = rect_y + 200;
+            rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
             rectangles[i + 28].strength = (rand() % 3) + 1;
             rectangles[i + 35].x = rect_x;
             rectangles[i + 35].y = rect_y + 250;
+            rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
             rectangles[i + 35].strength = (rand() % 3) + 1;
             rectangles[i + 42].x = rect_x;
             rectangles[i + 42].y = rect_y + 300;
+            rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
             rectangles[i + 42].strength = (rand() % 3) + 1;
 
             rect_x += RECT_WIDTH + 10;
@@ -760,32 +834,38 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i].x = rect_x;
                 rectangles[i].y = rect_y;
                 rectangles[i].is_visible = true;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rectangles[i].strength = (rand() % 3) + 1;
                 rectangles[i + 7].x = rect_x;
                 rectangles[i + 7].y = rect_y + 50;
                 rectangles[i + 7].is_visible = true;
+                rectangles[i+7].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rectangles[i + 7].strength = (rand() % 3) + 1;
                 rectangles[i + 14].x = rect_x;
                 rectangles[i + 14].y = rect_y + 100;
                 rectangles[i + 14].is_visible = false;
                 rectangles[i + 14].strength = (rand() % 3) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rectangles[i + 21].x = rect_x;
                 rectangles[i + 21].y = rect_y + 150;
                 rectangles[i + 21].is_visible = false;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rectangles[i + 21].strength = (rand() % 3) + 1;
                 rectangles[i + 28].x = rect_x;
                 rectangles[i + 28].y = rect_y + 200;
                 rectangles[i + 28].is_visible = false;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rectangles[i + 28].strength = (rand() % 3) + 1;
                 rectangles[i + 35].x = rect_x;
                 rectangles[i + 35].y = rect_y + 250;
                 rectangles[i + 35].is_visible = false;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rectangles[i + 35].strength = (rand() % 3) + 1;
                 rectangles[i + 42].x = rect_x;
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = false;
+                rectangles[i+42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
-
                 rect_x += RECT_WIDTH + 10;
             }
         }
@@ -823,6 +903,13 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = false;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rect_x += RECT_WIDTH + 10;
             }
             rectangles[0].is_visible = false; rectangles[6].is_visible = false; rectangles[3].is_visible = false;
@@ -865,6 +952,13 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = false;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rect_x += RECT_WIDTH + 10;
             }
             rectangles[7].is_visible = false; rectangles[8].is_visible = false; rectangles[12].is_visible = false; rectangles[13].is_visible = false;
@@ -899,6 +993,13 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = false;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rect_x += RECT_WIDTH + 10;
             }
             rectangles[0].is_visible = false; rectangles[7].is_visible = false; rectangles[14].is_visible = false;
@@ -939,6 +1040,13 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = false;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rect_x += RECT_WIDTH + 10;
             }
             rectangles[1].is_visible = false; rectangles[3].is_visible = false; rectangles[5].is_visible = false;
@@ -972,6 +1080,13 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = false;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rect_x += RECT_WIDTH + 10;
             }
             rectangles[0].is_visible = false; rectangles[1].is_visible = false; rectangles[3].is_visible = false;
@@ -1016,6 +1131,13 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = false;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rect_x += RECT_WIDTH + 10;
             }
             rectangles[9].is_visible = false; rectangles[11].is_visible = false; rectangles[17].is_visible = false;
@@ -1056,6 +1178,13 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = false;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rect_x += RECT_WIDTH + 10;
             }
         }
@@ -1093,6 +1222,13 @@ bool initialize(int lvl, bool loaded) {
                 rectangles[i + 42].y = rect_y + 300;
                 rectangles[i + 42].is_visible = true;
                 rectangles[i + 42].strength = (rand() % 3) + 1;
+                rectangles[i].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 7].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 14].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 21].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 28].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 35].bonuse = (rand() % BONUSE_CHANCE) + 1;
+                rectangles[i + 42].bonuse = (rand() % BONUSE_CHANCE) + 1;
                 rect_x += RECT_WIDTH + 10;
             }
             rectangles[37].is_visible = true; rectangles[38].is_visible = true; rectangles[39].is_visible = true;
@@ -1152,17 +1288,25 @@ bool initialize(int lvl, bool loaded) {
 
 void gameLoop(bool loaded)
 {
+    speedPlusTexture = loadTexture("plusSpeed.png", renderer);
+    speedMinusTexture = loadTexture("minspeed.png", renderer);
+    widthPlusTexture = loadTexture("plusWidth.png", renderer);
+    widthMinusTexture = loadTexture("minWidth.png", renderer);
     backGame();
     int lvl = 1;
     if (loaded)
     {
+        bonuse.isVisible = false;
         lvl = loadGame(lvl);
     }
     else
     {
+        circle.speedMode = 0;
+        platform.widthMode = 0;
         circle.score = 0;
         circle.lives = 3;
         int lvl = 1;
+        bonuse.isVisible = false;
     }
     for (; lvl < 11;)
     {
@@ -1178,6 +1322,10 @@ void gameLoop(bool loaded)
                 circle.lives++;
             }
         }
+        newLevel();
+        circle.speedMode = 0;
+        platform.widthMode = 0;
+        bonuse.isVisible = false;
     }
     SDL_RenderClear(renderer);
     win();
@@ -1286,6 +1434,10 @@ void menu()
     SDL_DestroyTexture(recordsTexture);
     SDL_DestroyTexture(settingsTexture);
     SDL_DestroyTexture(quitTexture);
+    SDL_DestroyTexture(speedPlusTexture);
+    SDL_DestroyTexture(speedMinusTexture);
+    SDL_DestroyTexture(widthPlusTexture);
+    SDL_DestroyTexture(widthMinusTexture);
 
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
@@ -1297,9 +1449,11 @@ void menu()
     Mix_FreeChunk(minusHeart);
     Mix_FreeChunk(bounce);
     Mix_FreeChunk(broke);
+    Mix_FreeChunk(newLvl);
     Mix_FreeChunk(button);
-    Mix_CloseAudio();
+    Mix_FreeChunk(soundOfBonuse);
 
+    Mix_CloseAudio();
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
