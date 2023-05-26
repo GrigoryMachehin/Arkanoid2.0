@@ -233,7 +233,7 @@ void printRecord()
 
 void save(int lvl) {
     ofstream file("save.txt");
-    file << circle.score << " " << lvl << " " << circle.lives << " " << circle.speedMode << endl;
+    file << circle.score << " " << lvl << " " << circle.lives << " " << circle.speedMode <<  " " << platform.widthMode << endl;
         for (int i = 0; i < 49; i++)
         {
             file << rectangles[i].is_visible << " ";
@@ -243,7 +243,7 @@ void save(int lvl) {
 
 int loadGame(int lvl) {
     ifstream file("save.txt");
-    file >> circle.score >> lvl >> circle.lives >> circle.speedMode;
+    file >> circle.score >> lvl >> circle.lives >> circle.speedMode >> platform.widthMode;
     for (int i = 0; i < 49; i++)
     {
         file >> rectangles[i].is_visible;
@@ -681,6 +681,22 @@ int update(int lvl) {
                             bonuse.y = rectangles[i].y;
                             bonuse.bonuceTexture = speedMinusTexture;
                         }
+                        if (rectangles[i].bonuse == 3 && !bonuse.isVisible)
+                        {
+                            bonuse.isVisible = true;
+                            bonuse.type = 3;
+                            bonuse.x = rectangles[i].x;
+                            bonuse.y = rectangles[i].y;
+                            bonuse.bonuceTexture = widthPlusTexture;
+                        }
+                        if (rectangles[i].bonuse == 4 && !bonuse.isVisible)
+                        {
+                            bonuse.isVisible = true;
+                            bonuse.type = 4;
+                            bonuse.x = rectangles[i].x;
+                            bonuse.y = rectangles[i].y;
+                            bonuse.bonuceTexture = widthMinusTexture;
+                        }
                         rectangles[i].is_visible = false;
                     }
                     bounceBall();
@@ -700,6 +716,8 @@ int update(int lvl) {
                 getBonus();
                 if (bonuse.type == 1) { circle.speedMode = -10; bonuse.isVisible = false; }
                 if (bonuse.type == 2) { circle.speedMode = 7; bonuse.isVisible = false; }
+                if (bonuse.type == 3) { platform.widthMode = 10; bonuse.isVisible = false; }
+                if (bonuse.type == 4) { platform.widthMode = -10; bonuse.isVisible = false; }
             }
             else
             {
@@ -765,6 +783,14 @@ void draw(int lvl) {
     {
         renderTexture(speedPlusTexture, renderer, 420, 640, 40, 40);
     }
+    if (platform.widthMode > 0)
+    {
+        renderTexture(widthPlusTexture, renderer, 420, 600, 40, 40);
+    }
+    if (platform.widthMode < 0)
+    {
+        renderTexture(widthMinusTexture, renderer, 420, 600, 40, 40);
+    }
     if (bonuse.isVisible)
     {
         renderTexture(bonuse.bonuceTexture, renderer, bonuse.x, bonuse.y, 50, 50);
@@ -773,7 +799,12 @@ void draw(int lvl) {
     SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     SDL_Rect rect = { platform.x - platform.widthMode, SCREEN_HEIGHT - PLATFORM_HEIGHT, PLATFORM_WIDTH  + platform.widthMode*2, PLATFORM_HEIGHT };
     SDL_RenderFillRect(renderer, &rect);
+    if (circle.velocity_x == 0 && circle.velocity_y == 0)
+    {
+        renderText(renderer, u8"ֽאזלטעו Space", 120, 640);
+    }
 
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 0);
     for (int w = 0; w < CIRCLE_RADIUS * 2; w++) {
         for (int h = 0; h < CIRCLE_RADIUS * 2; h++) {
             int dx = CIRCLE_RADIUS - w;
@@ -783,10 +814,12 @@ void draw(int lvl) {
             }
         }
     }
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
     char* argv = new char[255];
     renderText(renderer, _itoa(circle.score, argv, 10), 10, 5);
     renderText(renderer, "lvl", 425, 25);
     renderText(renderer, _itoa(lvl, argv, 10), 440, 5);
+
     delete argv;
 
     SDL_Delay(10 + circle.speedMode);
