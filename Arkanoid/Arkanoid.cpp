@@ -109,7 +109,7 @@ void saveRecord(const string& filename, const Record& new_record) {
     output_file.close();
 }
 
-void loadRecords(const std::string& filename, Record records[], int& record_count) {
+void loadRecords(const string& filename, Record records[], int& record_count) {
     ifstream file(filename);
     record_count = 0;
     while (file >> records[record_count].nickname >> records[record_count].score && record_count < MAX_RECORDS) {
@@ -180,7 +180,7 @@ int newRecord()
         renderText(renderer, u8"Введи имя, герой:", 100, 360);
         renderText(renderer, inputText, 150, 400);
         renderText(renderer, u8"(Латиница)", 150, 600);
-        renderText(renderer, u8"(Скип - ввод пустой строки)", 15, 640);
+        renderText(renderer, u8"(Esc - не запоминать)", 60, 640);
 
         SDL_RenderPresent(renderer);
     }
@@ -621,7 +621,7 @@ int update(int lvl) {
         circle.x += circle.velocity_x;
         circle.y += circle.velocity_y;
 
-        if (circle.x <= CIRCLE_RADIUS || circle.x >= SCREEN_WIDTH - 2 - CIRCLE_RADIUS) {
+        if (circle.x <= CIRCLE_RADIUS || circle.x >= SCREEN_WIDTH - 5 - CIRCLE_RADIUS) {
             bounceBall();
             circle.velocity_x *= -1;
         }

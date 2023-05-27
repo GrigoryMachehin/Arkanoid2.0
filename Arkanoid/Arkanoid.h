@@ -21,7 +21,7 @@ using namespace std;
 
 const int SCREEN_WIDTH = 480;
 const int SCREEN_HEIGHT = 720;
-const int PLATFORM_WIDTH = 120;
+const int PLATFORM_WIDTH = 100;
 const int PLATFORM_HEIGHT = 20;
 const int RECT_COUNT = 49;
 const int RECT_WIDTH = 60;
@@ -123,6 +123,7 @@ void lose();
 void win();
 void brokeRect();
 void bounceBall();
+void getBonus();
 void klick();
 
 void backMenu();
